@@ -1,0 +1,150 @@
+package ams11ghps;
+
+import java_cup.runtime.*;
+import java.io.IOException;
+import java.io.File;
+import java.io.FileInputStream;
+import ast.*;
+import visitor.*;
+
+parser code {:
+  protected AMS11GHPS lexer;
+:}
+
+init with {:
+  ComplexSymbolFactory f = new ComplexSymbolFactory();
+  symbolFactory = f;
+  File file = new File("input.txt");
+  FileInputStream fis = null;
+  try {
+    fis = new FileInputStream(file);
+  } catch (IOException e) {
+    e.printStackTrace();
+  } 
+  lexer = new AMS11GHPS(f,fis);
+:};
+scan with {: return lexer.next_token(); :};
+
+terminal           	BOOLEAN, CLASS, PUBLIC, EXTENDS, STATIC, VOID, MAIN,STRING,
+					WHILE, IF, ELSE, RETURN, LENGTH, THIS, NEW, PRINT,
+					AND, LESSTHAN, EQUAL, COMMENT, DIFFERENT, PLUS, MINUS, TIMES, NOT, ASSIGN, SEMI,
+					DOT, COMMA, LPAREN, RPAREN, LKEY, RKEY, LBRACK, RBRACK, INVERTBAR,STRARG;
+
+terminal Integer INT;
+terminal String IDENTIFIER;
+terminal Boolean FALSE, TRUE;
+
+non terminal Program Goal;
+non terminal MainClass MainClassG;
+non terminal ClassDeclList	ClassDeclarationList;
+non terminal ClassDecl	ClassDeclaration; 
+non terminal VarDecl	VarDeclaration;
+non terminal MethodDecl	MethodDeclaration;
+non terminal Type TypeG;
+non terminal Statement StatementG;
+non terminal StatementList StatementListG;
+non terminal Identifier	TemExtends;
+non terminal VarDeclList VarDeclarationList;
+non terminal MethodDeclList MethodDeclarationList;
+non terminal Formal FormalG;
+non terminal FormalList FormalListG;
+non terminal FormalList FormalGs;
+non terminal Exp Expression;
+non terminal ExpList ExpressionList;
+non terminal Identifier IdentifierG;
+non terminal ExpList TemParametro;
+
+precedence right ASSIGN;
+precedence left AND;
+precedence right NOT;
+precedence nonassoc EQUAL, DIFFERENT, LESSTHAN;
+precedence left PLUS, MINUS;
+precedence left TIMES;
+precedence right NEW;
+precedence nonassoc IDENTIFIER;
+precedence left DOT;
+
+ 
+
+Goal ::= MainClassG:mc ClassDeclarationList:cdl {:RESULT = new Program(mc, cdl);:};
+
+ClassDeclarationList ::= ClassDeclarationList:cdl ClassDeclaration:cd {:cdl.addElement(cd); RESULT = cdl;:}
+						 |{:RESULT = new ClassDeclList();:};
+
+
+ClassDeclaration ::= CLASS IdentifierG:id1 TemExtends:te LKEY VarDeclarationList:vdl 
+					 MethodDeclarationList:mdl RKEY{:if(te==null)RESULT = new ClassDeclSimple(id1, vdl, mdl);
+													else RESULT = new ClassDeclExtends(id1, te, vdl, mdl);
+													:};
+
+TemExtends ::= 	EXTENDS IdentifierG:nome {:RESULT = nome;:}
+                |{:RESULT = null;:};
+
+VarDeclarationList ::= 	VarDeclarationList:vdl VarDeclaration:vd {:vdl.addElement(vd);RESULT = vdl;:}
+                     	|{:RESULT = new VarDeclList();:};
+                     	
+VarDeclaration ::= TypeG:tp IdentifierG:id SEMI {:RESULT = new VarDecl(tp, id);:};
+
+
+MainClassG ::= 	CLASS IdentifierG:id1 LKEY PUBLIC STATIC VOID MAIN LPAREN STRARG 
+				IdentifierG:id2 RPAREN LKEY StatementG:st RKEY RKEY{:RESULT = new MainClass(id1, id2, st);:};
+
+MethodDeclaration ::= PUBLIC TypeG:t IdentifierG:id1 LPAREN FormalListG:fl RPAREN LKEY VarDeclarationList:vdl 
+					  StatementListG:stl RETURN Expression:ex SEMI RKEY 
+											{:RESULT = new MethodDecl(t,id1,fl,vdl,stl,ex);:};
+
+MethodDeclarationList ::= 	MethodDeclarationList:mdl MethodDeclaration:mt {:mdl.addElement(mt); RESULT = mdl;:}
+ 							|{:RESULT = new MethodDeclList();:};
+
+FormalListG ::= FormalGs:fl 				 {:RESULT = fl;:}
+											|{:RESULT = new FormalList();:};
+
+FormalGs ::= FormalGs:fs COMMA FormalG:fg 	{:fs.addElement(fg); RESULT = fs;:}
+             |FormalG:fg 					{:RESULT = new FormalList(); RESULT.addElement(fg);:};
+
+FormalG ::= TypeG:t IdentifierG:id 				{:RESULT = new Formal(t,id);:};
+
+
+TypeG ::= 	INT LBRACK RBRACK {:RESULT = new IntArrayType();:}
+			| BOOLEAN {:RESULT = new BooleanType();:}
+			| INT {:RESULT = new IntegerType();:}
+			| IdentifierG:id {:RESULT = new IdentifierType(id.toString());:};
+
+
+StatementG ::= 	 LKEY StatementListG:stl RKEY  {:RESULT = new Block(stl);:}
+				|IF LPAREN Expression:ex RPAREN StatementG:st1 ELSE StatementG:st2 {:RESULT = new If(ex, st1, st2);:}
+				| WHILE LPAREN Expression:ex RPAREN StatementG:st {: RESULT = new While(ex,st);:}
+				| PRINT LPAREN Expression:ex RPAREN SEMI {:RESULT = new Print(ex);:}
+				| IdentifierG:id ASSIGN Expression:ex SEMI {:RESULT = new Assign(id, ex);:}
+				| IdentifierG:id LBRACK Expression:ex1 RBRACK ASSIGN Expression:ex2 SEMI {:RESULT = new ArrayAssign(id, ex1, ex2);:};
+
+StatementListG ::= 	StatementG:st StatementListG:sl {:sl.addElement(st); RESULT = sl;:}
+					|{:RESULT = new StatementList();:};
+
+
+Expression ::= 	Expression:ex1 AND Expression:ex2 {:RESULT = new And(ex1, ex2);:}
+                | Expression:ex1 LESSTHAN Expression:ex2 {:RESULT = new LessThan(ex1, ex2);:}
+                | Expression:ex1 PLUS Expression:ex2 {:RESULT = new Plus(ex1, ex2);:}
+                | Expression:ex1 MINUS Expression:ex2 {:RESULT = new Minus(ex1, ex2);:}
+                | Expression:ex1 TIMES Expression:ex2 {:RESULT = new Times(ex1, ex2);:}
+				| Expression:ex1 LBRACK Expression:ex2 RBRACK {:RESULT = new ArrayLookup(ex1, ex2);:}
+				| Expression:ex1 DOT LENGTH {:RESULT = new ArrayLength(ex1);:}
+				| Expression:ex1 DOT IdentifierG:id LPAREN TemParametro:tp RPAREN {:RESULT = new Call(ex1,id,tp);:}
+				| INT:n {:RESULT = new IntegerLiteral(n);:}
+				| TRUE {:RESULT = new True();:}
+				| FALSE {:RESULT = new False();:}
+				| IdentifierG:id {:RESULT = new IdentifierExp(id.toString());:}
+				| THIS {:RESULT = new This();:}
+				| NEW INT LBRACK Expression:ex RBRACK {:RESULT = new NewArray(ex);:}
+				| NEW IdentifierG:id LPAREN RPAREN {:RESULT = new NewObject(id);:}
+				| NOT Expression:ex {:RESULT = new Not(ex);:}
+				| LPAREN Expression:ex RPAREN {:RESULT = ex;:};
+
+
+TemParametro ::= ExpressionList:el {:RESULT = el;:}
+                 |{:RESULT = new ExpList();:};
+
+ExpressionList ::= ExpressionList:exs COMMA Expression:ex {:exs.addElement(ex); RESULT = exs;:}
+                   |Expression:ex {:RESULT = new ExpList();RESULT.addElement(ex);:};
+
+IdentifierG ::= IDENTIFIER:id {:RESULT = new Identifier(id);:};
