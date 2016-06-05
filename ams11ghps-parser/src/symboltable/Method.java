@@ -83,5 +83,9 @@ public class Method {
 
 		return null;
 	}
+	
+	public int size(){
+		return this.params.size();
+	}
 
 } // Method

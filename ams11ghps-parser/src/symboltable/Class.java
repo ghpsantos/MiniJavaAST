@@ -80,4 +80,4 @@ public class Class {
 	public String parent() {
 		return parent;
 	}
-} // Classs
+} // Class

@@ -60,14 +60,14 @@ public class SymbolTable {
 		}
 
 		System.out.println("Variavel " + id + " nao definida no escopo atual");
-		System.exit(0);
+		//System.exit(0);
 		return null;
 	}
 
 	public Method getMethod(String id, String classScope) {
 		if (getClass(classScope) == null) {
 			System.out.println("Class " + classScope + " nao definida");
-			System.exit(0);
+			//System.exit(0);
 		}
 
 		Class c = getClass(classScope);
@@ -86,7 +86,7 @@ public class SymbolTable {
 		System.out.println("Metodo " + id + " nao definido na classe "
 				+ classScope);
 
-		System.exit(0);
+	//	System.exit(0);
 		return null;
 	}
 
@@ -111,7 +111,7 @@ public class SymbolTable {
 
 		System.out.println("Metodo " + id + " nao definido na classe "
 				+ classScope);
-		System.exit(0);
+		//System.exit(0);
 		return null;
 	}
 
@@ -145,8 +145,8 @@ public class SymbolTable {
 	}
 
 }// SymbolTable
-
-/*public class Class {
+/*
+public class Class {
 
 	String id;
 	Hashtable<Object, Method> methods;
@@ -222,7 +222,7 @@ public class SymbolTable {
 	}
 } // Class
 
-public class Variable {
+/*public class Variable {
 
 	String id;
 	Type type;

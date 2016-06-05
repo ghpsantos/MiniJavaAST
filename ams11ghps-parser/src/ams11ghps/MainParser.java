@@ -1,17 +1,26 @@
 package ams11ghps;
 
+
+
+import symboltable.SymbolTable;
+import visitor.BuildSymbolTableVisitor;
 import visitor.PrettyPrintVisitor;
+import visitor.TypeCheckVisitor;
 import ast.Program;
 
 
 public class MainParser {
 	public static void main(String[] args) throws Exception {
 		Parser parser = new Parser();
-		parser.parse();
 		
 		Program prog = (Program)parser.parse().value;
-	//	chama o visitor de pretty print
-		prog.accept(new PrettyPrintVisitor()); 
+		
+		BuildSymbolTableVisitor stVis = new BuildSymbolTableVisitor();
+		//programa na forma de AST
+
+		prog.accept(stVis); 
+		//fazendo a checagem de tipos
+		prog.accept(new TypeCheckVisitor(stVis.getSymbolTable())); 
 
 	}
 }
